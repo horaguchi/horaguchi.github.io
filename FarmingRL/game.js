@@ -93,7 +93,7 @@ var Game = {
       height: height,
       fg: "black",
       bg: "white",
-      fontSize: 12,
+      fontSize: 10,
       spacing: 1.1
     });
 
