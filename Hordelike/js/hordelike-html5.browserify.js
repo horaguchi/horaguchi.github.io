@@ -370,13 +370,13 @@ Hordelike.prototype.key = function (key_str) {
     return true;
   }
 
-  if (key_str === 'w' || key_str === 'k') {
+  if (key_str === 'w' || key_str === 'k' || key_str === '&') {
     return this.move(0, -1);
-  } else if (key_str === 'a' || key_str === 'h') {
+  } else if (key_str === 'a' || key_str === 'h' || key_str === '%') {
     return this.move(-1, 0);
-  } else if (key_str === 's' || key_str === 'j') {
+  } else if (key_str === 's' || key_str === 'j' || key_str === '(') {
     return this.move(0, 1);
-  } else if (key_str === 'd' || key_str === 'l') {
+  } else if (key_str === 'd' || key_str === 'l' || key_str === "'") {
     return this.move(1, 0);
   } else if (key_str === 'f') {
     return this.fire();
