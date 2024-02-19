@@ -1,0 +1,148 @@
+<html>
+<head>
+<script src="https://pixijs.download/release/pixi.min.js"></script>
+<style>
+body { text-align: center; }
+marquee { width: 500px; font-size: 200%; font-style: italic }
+</style>
+</head>
+<body>
+<marquee behavior="alternate">1秒で完了！爆速MBTI診断</marquee>
+<div id="roulette"></div>
+<script>
+  let app = new PIXI.Application({ width: 500, height: 420, backgroundColor: 0xffffff });
+  document.getElementById('roulette').appendChild(app.view);
+
+  let container = new PIXI.Container();
+  container.x = app.screen.width / 2;
+  container.y = app.screen.height / 2;
+  app.stage.addChild(container);
+
+  const sections = 16; // マスの数
+  const radius = 200; // ルーレットの半径
+  const textStyle = new PIXI.TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 20,
+    fill: 'white',
+    align: 'center'
+  });
+
+  let sectionTexts = [
+    'INTJ', 'INTP', 'ENTJ', 'ENTP',
+    'INFJ', 'INFP', 'ENFJ', 'ENFP',
+    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+    'ISTP', 'ISFP', 'ESTP', 'ESFP',
+  ]; // 各セクションのテキストを保持する配列
+
+  for (let i = 0; i < sections; i++) {
+    let hue = (i / sections) * 360; // 色相の計算
+    let sectionColor = PIXI.utils.string2hex(hslToHex(hue, 100, 46)); // 彩度と輝度は100%と46%で固定
+
+    let section = new PIXI.Graphics();
+    section.beginFill(sectionColor, 1);
+    section.moveTo(0, 0);
+    section.arc(0, 0, radius, (i * 2 * Math.PI) / sections, ((i + 1) * 2 * Math.PI) / sections);
+    section.lineTo(0, 0);
+    section.endFill();
+    section.x = 0;
+    section.y = 0;
+    container.addChild(section);
+
+    // テキストをセクションに追加し、角度を調整
+    let angle = (i + 0.5) * 2 * Math.PI / sections;
+    let text = new PIXI.Text(sectionTexts[i], textStyle);
+    text.x = Math.cos(angle) * radius * 0.85;
+    text.y = Math.sin(angle) * radius * 0.85;
+    
+    // テキストの向きを調整
+    text.rotation = angle;
+    text.anchor.set(0.5, 0.5); // テキストの中心を基点に回転
+
+    container.addChild(text);
+  }
+
+  // 矢印を左向きにして円の右側に配置
+  let arrow = new PIXI.Graphics();
+  arrow.beginFill(0xFF0000); // 赤色で矢印を描画
+  arrow.moveTo(-20, 0);      // 先端の点、矢印の左側
+  arrow.lineTo(0, -10);     // 下側の点
+  arrow.lineTo(0, 10);      // 上側の点
+  arrow.lineTo(-20, 0);      // 先端の点に戻る
+  arrow.endFill();
+  arrow.x = app.screen.width / 2 + radius + 30; // 矢印をルーレットの右側に配置
+  arrow.y = app.screen.height / 2;
+  app.stage.addChild(arrow);
+
+  let rotationSpeed = 0.1; // 回転速度の初期値
+  app.ticker.add(() => {
+    container.rotation += rotationSpeed;
+  });
+
+  // 回転停止時のテキスト表示用のスタイル
+  const bigTextStyle = new PIXI.TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 32,
+    fill: 'yellow',
+    align: 'center'
+  });
+
+  // 回転を停止して選択されたセクションのテキストを表示
+  function showSelectedSectionText(index) {
+    // 既存のテキストをクリア
+    if (app.stage.children.length > 2) {
+      app.stage.removeChildAt(2); // 最初の子要素はコンテナなので、それ以外を削除
+    }
+
+    // 選択されたセクションのテキストを大きく表示
+    let selectedText = new PIXI.Text('あなたは' + sectionTexts[index] + 'です', bigTextStyle);
+    selectedText.x = app.screen.width / 2 - selectedText.width / 2;
+    selectedText.y = app.screen.height / 2 - selectedText.height / 2;
+    app.stage.addChild(selectedText);
+    
+    // X 共有リンク
+    showTweetLink(sectionTexts[index]);
+  }
+
+  app.view.addEventListener('click', function() {
+    if (rotationSpeed !== 0) {
+      rotationSpeed = 0; // 回転停止
+      // コンテナの回転角度を正規化（0から2πの範囲内）
+      let normalizedRotation = (container.rotation % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+      // 真右にくるセクションのインデックスを計算（コンテナの回転角度を使用）
+      let selectedSectionIndex = Math.floor(normalizedRotation / (2 * Math.PI) * sections);
+      // セクションインデックスを反転（配列は時計回りに描画されるが、回転は反時計回りに計算される）
+      selectedSectionIndex = (sections - selectedSectionIndex - 1) % sections;
+
+      showSelectedSectionText(selectedSectionIndex);
+    } else {
+      rotationSpeed = 0.1; // 回転開始
+      // 既存のテキストをクリア
+      if (app.stage.children.length > 2) {
+        app.stage.removeChildAt(2); // 最初の子要素はコンテナなので、それ以外を削除
+      }
+    }
+  });
+
+  function hslToHex(h, s, l) {
+    l /= 100;
+    const a = s * Math.min(l, 1 - l) / 100;
+    const f = n => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0'); // HEX形式へ変換
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  }
+
+  function showTweetLink(result) {
+    let a = document.getElementById('xpost');
+    a.innerText = "Xにポストする";
+    let text = `${result}でした\n\n#爆速MBTI診断\nhttps://horaguchi.net/mbti/`;
+    a.href = "https://twitter.com/intent/post?text=" + encodeURIComponent(text);
+  }
+</script>
+
+<p><a id="xpost">&emsp;</a></p>
+<p><a href="https://www.mbti.or.jp/imitation/">MBTIについてもっと知りたい方はこちら！</a></p>
+</body>
+</html>
